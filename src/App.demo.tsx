@@ -10,7 +10,7 @@ import { uploadAndAnalyse } from './services/api.mock';  // Mock data - WORKS WI
 
 function App() {
   const [currentPage, setCurrentPage] = useState('upload');
-  const [lastAnalysis, setLastAnalysis] = useState<AnalysisResult | null>(null);
+  const [_lastAnalysis, setLastAnalysis] = useState<AnalysisResult | null>(null);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
@@ -20,7 +20,7 @@ function App() {
     setLastAnalysis(result);
   };
 
-  const handleViewAnalysis = (analysisId: string) => {
+  const handleViewAnalysis = (_analysisId: string) => {
     setCurrentPage('upload');
   };
 

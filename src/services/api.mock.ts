@@ -46,7 +46,7 @@ export const mockHistoryResponse: HistoryResponse = {
  * Returns simulated results after delay
  */
 export const uploadAndAnalyse = async (
-  file: File,
+  _file: File,
   overrideModality?: string,
   onProgress?: (progress: number) => void
 ): Promise<AnalysisResult> => {

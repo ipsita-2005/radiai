@@ -6,7 +6,7 @@ import type { AnalysisResult } from './types';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('upload');
-  const [lastAnalysis, setLastAnalysis] = useState<AnalysisResult | null>(null);
+  const [_lastAnalysis, setLastAnalysis] = useState<AnalysisResult | null>(null);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
@@ -16,7 +16,7 @@ function App() {
     setLastAnalysis(result);
   };
 
-  const handleViewAnalysis = (analysisId: string) => {
+  const handleViewAnalysis = (_analysisId: string) => {
     // For now, just switch to upload page
     // In a full implementation, you'd load the specific analysis
     setCurrentPage('upload');

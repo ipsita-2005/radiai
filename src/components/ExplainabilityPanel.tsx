@@ -2,7 +2,7 @@
  * ExplainabilityPanel Component - Display GradCAM heatmap and ECG waveform
  */
 import { useEffect, useRef, useState } from 'react';
-import type { AnalysisResult, ModalityType } from '../types';
+import type { AnalysisResult } from '../types';
 
 interface ExplainabilityPanelProps {
   result: AnalysisResult;
