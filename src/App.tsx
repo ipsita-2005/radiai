@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Navbar } from './components/Navbar';
-import { UploadPage } from './pages/UploadPage';
+import { Navbar } from './components/Navbar.clinical';
+import { UploadPage as UploadPageClinical } from './pages/UploadPage.clinical';
 import { HistoryPage } from './pages/HistoryPage';
 import type { AnalysisResult } from './types';
 
@@ -23,12 +23,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-medical-900 to-medical-700">
+    <div className="min-h-screen bg-clinical-950">
       <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
       
       <main className="flex-1">
         {currentPage === 'upload' && (
-          <UploadPage onAnalysisComplete={handleAnalysisComplete} />
+          <UploadPageClinical onAnalysisComplete={handleAnalysisComplete} />
         )}
         
         {currentPage === 'history' && (
