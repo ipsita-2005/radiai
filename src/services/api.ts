@@ -2,7 +2,7 @@
  * Hybrid API Service - Uses Gemini AI with Mock Fallback
  * Works perfectly on Vercel without backend!
  */
-import type { AnalysisResult, HistoryResponse } from '../types';
+import type { AnalysisResult as _AnalysisResult, HistoryResponse as _HistoryResponse } from '../types';
 import { 
   uploadAndAnalyseHybrid, 
   getHistory as getMockHistory, 

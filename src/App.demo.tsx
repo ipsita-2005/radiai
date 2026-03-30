@@ -6,7 +6,7 @@ import type { AnalysisResult } from './types';
 
 // Import both real and mock API services
 // import { uploadAndAnalyse } from './services/api';  // Real backend
-import { uploadAndAnalyse } from './services/api.mock';  // Mock data - WORKS WITHOUT BACKEND!
+import { uploadAndAnalyse as _uploadAndAnalyse } from './services/api.mock';  // Mock data - WORKS WITHOUT BACKEND!
 
 function App() {
   const [currentPage, setCurrentPage] = useState('upload');

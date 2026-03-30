@@ -9,9 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_GEMINI_API_KEY: string;
 }
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
+declare const importMeta: ImportMetaEnv;
 
 const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
 const GEMINI_MODEL = 'gemini-1.5-flash';
@@ -79,7 +77,7 @@ const fileToBase64 = async (file: File): Promise<string> => {
 /**
  * Parse Gemini response into AnalysisResult
  */
-const parseGeminiResponse = (responseText: string, modality: ModalityType): Partial<AnalysisResult> => {
+const parseGeminiResponse = (responseText: string, _modality: ModalityType): Partial<AnalysisResult> => {
   try {
     // Extract JSON from response (Gemini might wrap it in markdown)
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
