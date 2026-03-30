@@ -25,10 +25,9 @@ from utils import (
     generate_gradcam_heatmap,
     save_heatmap_as_png,
     generate_pdf_report,
-    auto_detect_modality,
     calculate_severity_score
 )
-from services.gemini_service import get_gemini_service
+from utils.enhanced_modality_router import auto_detect_modality
 
 router = APIRouter()
 
@@ -53,15 +52,15 @@ async def analyse_medical_image(
     """
     Analyse uploaded medical image
     
-    Implements 8-step processing pipeline:
-    1. File Validation
-    2. Modality Auto-Router
+    Implements enhanced 8-step clinical processing pipeline:
+    1. File Validation & MIME Check
+    2. Enhanced Modality Auto-Router (3-stage detection)
     3. Preprocessing
     4. Model Inference
     5. MC Dropout Uncertainty
     6. GradCAM + Exact Point
     7. Severity Score
-    8. PDF & Gemini Report
+    8. Clinical AI Narrative Report
     """
     start_time = time.time()
     
@@ -71,25 +70,39 @@ async def analyse_medical_image(
         if len(contents) > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="File size exceeds 50 MB limit")
         
+        # Validate file type
+        if not file.filename or '.' not in file.filename:
+            raise HTTPException(status_code=400, detail="Invalid filename")
+        
         # Save file temporarily
         file_id = str(uuid.uuid4())
-        file_ext = os.path.splitext(file.filename)[1]
+        file_ext = os.path.splitext(file.filename)[1].lower()
         temp_path = f"uploads/{file_id}{file_ext}"
         
         with open(temp_path, "wb") as f:
             f.write(contents)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File processing error: {str(e)}")
     
     try:
-        # ========== STEP 2: Modality Auto-Router ==========
+        # ========== STEP 2: Enhanced Modality Auto-Router ==========
         if override_modality:
             modality = override_modality.lower()
-            metadata = {}
+            metadata = {'detection_method': 'manual_override'}
+            print(f"✓ Using manual modality override: {modality}")
         else:
-            modality, metadata = auto_detect_modality(temp_path, file.filename)
-        
-        print(f"Detected modality: {modality}")
+            # Use enhanced 3-stage detection
+            try:
+                modality, metadata = auto_detect_modality(temp_path, file.filename)
+                print(f"✓ Auto-detected modality: {modality} (method: {metadata.get('detection_method', 'unknown')})")
+            except ValueError as e:
+                # Cannot determine modality - return clear error
+                raise HTTPException(
+                    status_code=400,
+                    detail=str(e)
+                )
         
         # ========== STEP 3: Preprocessing ==========
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -187,9 +200,9 @@ async def analyse_medical_image(
         severity_score = calculate_severity_score(prediction_label, confidence_value, modality)
         print(f"Severity Score: {severity_score:.2f}")
         
-        # ========== STEP 8: PDF & Gemini Report ==========
-        gemini_service = get_gemini_service()
-        gemini_summary = await gemini_service.generate_clinical_summary(
+        # ========== STEP 8: Clinical AI Narrative & PDF Report ==========
+        # Generate automated clinical narrative (no external API)
+        clinical_narrative = generate_clinical_narrative(
             modality=modality,
             prediction=prediction_label,
             confidence=confidence_value,
@@ -197,7 +210,7 @@ async def analyse_medical_image(
             is_uncertain=is_uncertain
         )
         
-        # Generate PDF
+        # Generate PDF report
         pdf_filename = f"{file_id}_report.pdf"
         pdf_path = f"reports/{pdf_filename}"
         
@@ -209,7 +222,7 @@ async def analyse_medical_image(
             uncertainty_std=uncertainty_std,
             is_uncertain=is_uncertain,
             exact_point=exact_point,
-            gemini_summary=gemini_summary,
+            gemini_summary=clinical_narrative,  # Using internal narrative
             heatmap_path=heatmap_path if heatmap_path else "",
             output_path=pdf_path
         )
@@ -318,3 +331,77 @@ def get_class_names(modality: str) -> list:
         'xray': ['Comminuted', 'Displaced', 'Hairline', 'Normal']
     }
     return class_maps.get(modality, ['Unknown'])
+
+
+def generate_clinical_narrative(
+    modality: str,
+    prediction: str,
+    confidence: float,
+    severity_score: float,
+    is_uncertain: bool
+) -> str:
+    """
+    Generate automated clinical narrative (replaces Gemini service)
+    
+    Args:
+        modality: Imaging modality
+        prediction: Model prediction
+        confidence: Confidence score
+        severity_score: Severity rating
+        is_uncertain: Whether prediction is uncertain
+        
+    Returns:
+        Clinical narrative string
+    """
+    # Build structured clinical summary
+    narrative_parts = []
+    
+    # Header
+    narrative_parts.append("CLINICAL IMAGING ANALYSIS REPORT")
+    narrative_parts.append("=" * 40)
+    narrative_parts.append("")
+    
+    # Primary finding
+    narrative_parts.append(f"PRIMARY FINDING: {prediction}")
+    narrative_parts.append(f"Confidence Level: {confidence:.1%}")
+    narrative_parts.append("")
+    
+    # Severity assessment
+    severity_text = "LOW" if severity_score < 4 else "MODERATE" if severity_score < 7 else "HIGH"
+    narrative_parts.append(f"SEVERITY ASSESSMENT: {severity_text} ({severity_score:.1f}/10)")
+    narrative_parts.append("")
+    
+    # Uncertainty flag
+    if is_uncertain:
+        narrative_parts.append("⚠️ NOTE: AI model indicates elevated uncertainty in this prediction.")
+        narrative_parts.append("   Consider additional clinical correlation or second opinion.")
+        narrative_parts.append("")
+    
+    # Modality-specific context
+    modality_context = {
+        'mri': "Brain MRI analysis performed using deep learning-based segmentation.",
+        'chest_ct': "Chest CT analysis with focus on pulmonary parenchyma evaluation.",
+        'head_ct': "Non-contrast head CT evaluated for acute intracranial pathology.",
+        'xray': "Digital radiograph analyzed for osseous abnormalities.",
+        'ecg': "12-lead ECG rhythm analysis and ST-segment evaluation."
+    }
+    
+    if modality in modality_context:
+        narrative_parts.append("METHODOLOGY:")
+        narrative_parts.append(modality_context[modality])
+        narrative_parts.append("")
+    
+    # Recommendation
+    narrative_parts.append("RECOMMENDATION:")
+    if severity_score < 3:
+        narrative_parts.append("Routine clinical follow-up as indicated.")
+    elif severity_score < 6:
+        narrative_parts.append("Consider further clinical evaluation and correlation with patient symptoms.")
+    else:
+        narrative_parts.append("Urgent clinical evaluation recommended. Correlate with patient presentation.")
+    
+    narrative_parts.append("")
+    narrative_parts.append("=" * 40)
+    narrative_parts.append("This report is generated by AI and should be reviewed by a qualified healthcare professional.")
+    
+    return "\n".join(narrative_parts)
