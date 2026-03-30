@@ -1,0 +1,7 @@
+# Build Trigger File
+# This file forces Vercel to rebuild with latest code
+# Created: 2026-03-30
+
+Build triggered due to stale commit issue.
+Latest commit: 65da863
+All TypeScript fixes applied.
